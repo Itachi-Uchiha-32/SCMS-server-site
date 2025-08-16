@@ -281,8 +281,19 @@ async function run() {
       const result = await bookingsCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
-    
-    
+    //reviews 
+
+    app.get('/reviews', async (req, res) => {
+      try {
+        const reviews = await reviewsCollection
+          .find({})
+          .sort({ date: -1 }) 
+          .toArray();
+        res.send(reviews);
+      } catch (err) {
+        res.status(500).send({ message: 'Failed to fetch reviews', error: err.message });
+      }
+    });
 
     //coupon
     app.get('/coupons', async (req, res) => {
