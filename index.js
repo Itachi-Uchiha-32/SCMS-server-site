@@ -46,6 +46,7 @@ async function run() {
     const couponsCollection = db.collection('coupons')
     const paymentsCollection = db.collection('payments');
     const announcementsCollection = db.collection('announcements');
+    const reviewsCollection = db.collection('reviews');
     // Send a ping to confirm a successful connection
 
     const verifyFirebase = async (req, res, next) => {
@@ -281,7 +282,7 @@ async function run() {
       res.send(result);
     });
     
-
+    
 
     //coupon
     app.get('/coupons', async (req, res) => {
@@ -414,6 +415,15 @@ async function run() {
     });
 
     //  courts api's
+    app.get('/courts/featured', async (req, res) => {
+      try {
+        const courts = await db.collection('courts').find({ featured: true }).toArray();
+        res.send(courts);
+      } catch (err) {
+        res.status(500).send({ message: 'Failed to fetch featured courts', error: err.message });
+      }
+    });
+
     app.get('/courts', async (req, res) => {
       try {
         const page = parseInt(req.query.page) || 1;
