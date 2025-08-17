@@ -48,6 +48,7 @@ async function run() {
     const announcementsCollection = db.collection('announcements');
     const reviewsCollection = db.collection('reviews');
     const eventsCollection = db.collection('events');
+    const newsletterCollection = db.collection('newsletter');
     // Send a ping to confirm a successful connection
 
     const verifyFirebase = async (req, res, next) => {
@@ -296,6 +297,83 @@ async function run() {
         res.status(500).send({ message: 'Failed to fetch reviews', error: err.message });
       }
     });
+
+    //newsletter
+
+    await newsletterCollection.createIndex({ email: 1 }, { unique: true });
+
+    // POST /newsletter/subscribe  (public)
+    app.post('/newsletter/subscribe', async (req, res) => {
+      try {
+        let { email } = req.body || {};
+        if (!email || typeof email !== 'string') {
+          return res.status(400).send({ message: 'Email is required' });
+        }
+
+        email = email.trim().toLowerCase();
+
+        // simple validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+        if (!emailRegex.test(email)) {
+          return res.status(400).send({ message: 'Invalid email format' });
+        }
+
+        const doc = {
+          email,
+          status: 'subscribed',          // subscribed | unsubscribed
+          createdAt: new Date(),
+          source: 'site-newsletter',     // helpful if you add more forms later
+        };
+
+        await newsletterCollection.insertOne(doc);
+        res.send({ success: true, message: 'Subscribed successfully' });
+      } catch (err) {
+        // Duplicate email
+        if (err?.code === 11000) {
+          return res.status(409).send({ success: true, message: 'Already subscribed' });
+        }
+        res.status(500).send({ message: 'Subscription failed', error: err.message });
+      }
+    });
+
+    // GET /newsletter  (admin only)
+    app.get('/newsletter', verifyFirebase, verifyAdmin, async (req, res) => {
+      try {
+        const page = parseInt(req.query.page) || 1;
+        const size = parseInt(req.query.size) || 20;
+
+        const total = await newsletterCollection.countDocuments();
+        const items = await newsletterCollection
+          .find({})
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * size)
+          .limit(size)
+          .toArray();
+
+        res.send({
+          total,
+          currentPage: page,
+          totalPages: Math.ceil(total / size),
+          items,
+        });
+      } catch (err) {
+        res.status(500).send({ message: 'Failed to fetch subscribers', error: err.message });
+      }
+    });
+
+    // DELETE /newsletter/:id  (admin only)
+    app.delete('/newsletter/:id', verifyFirebase, verifyAdmin, async (req, res) => {
+      try {
+        const { id } = req.params;
+        if (!ObjectId.isValid(id)) return res.status(400).send({ message: 'Invalid ID' });
+
+        const result = await newsletterCollection.deleteOne({ _id: new ObjectId(id) });
+        res.send({ success: true, deletedCount: result.deletedCount });
+      } catch (err) {
+        res.status(500).send({ message: 'Failed to delete subscriber', error: err.message });
+      }
+    });
+
 
     //events
     app.get("/events", async (req, res) => {
