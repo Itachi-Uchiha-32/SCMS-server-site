@@ -324,7 +324,7 @@ async function run() {
       try {
         const { id } = req.params;
         const updates = req.body;
-        
+        console.log(updates);
 
         const result = await eventsCollection.updateOne(
           { _id: new ObjectId(id) },
