@@ -47,6 +47,7 @@ async function run() {
     const paymentsCollection = db.collection('payments');
     const announcementsCollection = db.collection('announcements');
     const reviewsCollection = db.collection('reviews');
+    const eventsCollection = db.collection('events');
     // Send a ping to confirm a successful connection
 
     const verifyFirebase = async (req, res, next) => {
@@ -281,6 +282,7 @@ async function run() {
       const result = await bookingsCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
+    
     //reviews 
 
     app.get('/reviews', async (req, res) => {
@@ -292,6 +294,49 @@ async function run() {
         res.send(reviews);
       } catch (err) {
         res.status(500).send({ message: 'Failed to fetch reviews', error: err.message });
+      }
+    });
+
+    //events
+    app.get("/events", async (req, res) => {
+      try {
+        const events = await eventsCollection.find().toArray();
+        res.json(events);
+      } catch (err) {
+        res.status(500).json({ message: "Failed to fetch events" });
+      }
+    });
+
+    // POST new event
+    app.post("/events", async (req, res) => {
+      try {
+        const newEvent = req.body;
+        newEvent.createdAt = new Date();
+        const result = await eventsCollection.insertOne(newEvent);
+        res.status(201).json(result);
+      } catch (err) {
+        res.status(500).json({ message: "Failed to create event" });
+      }
+    });
+
+    // PATCH update event by ID
+    app.patch("/events/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const updates = req.body;
+
+        const result = await eventsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updates }
+        );
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: "Event not found" });
+        }
+
+        res.json({ message: "Event updated successfully" });
+      } catch (err) {
+        res.status(500).json({ message: "Failed to update event" });
       }
     });
 
