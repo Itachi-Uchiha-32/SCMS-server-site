@@ -282,7 +282,7 @@ async function run() {
       const result = await bookingsCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
-    
+
     //reviews 
 
     app.get('/reviews', async (req, res) => {
@@ -324,6 +324,7 @@ async function run() {
       try {
         const { id } = req.params;
         const updates = req.body;
+        console.log(updates);
 
         const result = await eventsCollection.updateOne(
           { _id: new ObjectId(id) },
